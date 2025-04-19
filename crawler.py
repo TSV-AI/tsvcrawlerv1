@@ -30,7 +30,7 @@ def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
             if not link:
                 continue
             full = urljoin(base_url, link)
-            if full.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif")):
+            if full.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif",".webp")):
                 found_files.add(full)
 
         # Recurse into same‑domain pages
