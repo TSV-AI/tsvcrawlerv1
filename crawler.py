@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 FILE_EXTS = (".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".webp")
 
@@ -11,7 +12,10 @@ def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
         found_files = set()
 
     base_domain = urlparse(base_url).netloc
-    seen_paths  = set()   # track normalized paths to dedupe
+    seen_paths  = set()
+
+    # Use a single Session for connection pooling
+    session = requests.Session()
 
     def _crawl(url: str, depth: int):
         if depth > max_depth or url in visited:
@@ -19,49 +23,53 @@ def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
         visited.add(url)
 
         try:
-            resp = requests.get(url, timeout=5)
+            resp = session.get(url, timeout=5)
             resp.raise_for_status()
         except requests.RequestException:
             return
 
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # Gather file links
+        # 1) Collect candidates
         for tag in soup.find_all(["a", "img", "script"]):
             raw = tag.get("href") or tag.get("src")
             if not raw:
                 continue
 
             full = urljoin(base_url, raw)
-            parsed = urlparse(full)
-            path   = parsed.path.lower()
+            path = urlparse(full).path.lower()
 
-            # 1) extension check
             if not path.endswith(FILE_EXTS):
                 continue
-
-            # 2) dedupe by path
             if path in seen_paths:
                 continue
 
-            # 3) quick HEAD-check to weed out 404s
-            try:
-                head = requests.head(full, allow_redirects=True, timeout=3)
-                if head.status_code >= 400:
-                    continue
-            except requests.RequestException:
-                continue
-
-            # passed all filters!
             seen_paths.add(path)
             found_files.add(full)
 
-        # Recurse into same-domain pages
+        # 2) Recurse same‑domain links
         for a in soup.find_all("a", href=True):
             href = urljoin(base_url, a["href"])
             if urlparse(href).netloc == base_domain:
                 _crawl(href, depth + 1)
 
-    # kick it off
+    # Kick off the crawl
     _crawl(base_url, 0)
-    return visited, found_files
+
+    # 3) Parallel HEAD‑check to weed out 404s
+    def is_live(url):
+        try:
+            r = session.head(url, allow_redirects=True, timeout=1)
+            return r.status_code < 400
+        except:
+            return False
+
+    valid_files = set()
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(is_live, url): url for url in found_files}
+        for fut in as_completed(futures):
+            url = futures[fut]
+            if fut.result():
+                valid_files.add(url)
+
+    return visited, valid_files
