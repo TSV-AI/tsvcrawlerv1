@@ -25,13 +25,17 @@ def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
         soup = BeautifulSoup(resp.text, "html.parser")
 
         # Gather file links
-        for tag in soup.find_all(["a", "img", "script"]):
-            link = tag.get("href") or tag.get("src")
-            if not link:
-                continue
-            full = urljoin(base_url, link)
-            if full.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif",".webp")):
-                found_files.add(full)
+from urllib.parse import urlparse
+
+for tag in soup.find_all(["a", "img", "script"]):
+    link = tag.get("href") or tag.get("src")
+    if not link:
+        continue
+
+    full = urljoin(base_url, link)
+    p = urlparse(full)
+    if p.path.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".webp")):
+        found_files.add(full)
 
         # Recurse into same‑domain pages
         for a in soup.find_all("a", href=True):
