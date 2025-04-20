@@ -25,16 +25,20 @@ def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
         soup = BeautifulSoup(resp.text, "html.parser")
 
         # Gather file links
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
+found_files = set()
 for tag in soup.find_all(["a", "img", "script"]):
     link = tag.get("href") or tag.get("src")
     if not link:
         continue
-
     full = urljoin(base_url, link)
-    p = urlparse(full)
-    if p.path.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".webp")):
+    # Option A: strip query-string
+    clean = full.split('?', 1)[0].lower()
+    # Option B: parse the path
+    # clean = urlparse(full).path.lower()
+
+    if clean.endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".webp")):
         found_files.add(full)
 
         # Recurse into same‑domain pages
