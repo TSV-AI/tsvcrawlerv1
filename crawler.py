@@ -1,12 +1,15 @@
+import requests
+# crawler code
+import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-import requests
 
-# (your extract_files here)
+def crawl(base_url: str, max_depth: int = 2, visited=None, found_files=None):
+    if visited is None:
+        visited = set()
+    if found_files is None:
+        found_files = set()
 
-def crawl(base_url: str, max_depth: int = 2):
-    visited = set()
-    found_files = set()
     base_domain = urlparse(base_url).netloc
 
     def _crawl(url: str, depth: int):
@@ -16,15 +19,21 @@ def crawl(base_url: str, max_depth: int = 2):
         try:
             resp = requests.get(url, timeout=5)
             resp.raise_for_status()
-        except requests.RequestException:
+        except Exception:
             return
 
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # — replace your old loop with this —
-        found_files |= extract_files(soup, url)
+        # Gather file links
+        for tag in soup.find_all(["a", "img", "script"]):
+            link = tag.get("href") or tag.get("src")
+            if not link:
+                continue
+            full = urljoin(base_url, link)
+            if full.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif",".webp")):
+                found_files.add(full)
 
-        # now recurse into same‑domain links
+        # Recurse into same‑domain pages
         for a in soup.find_all("a", href=True):
             href = urljoin(base_url, a["href"])
             if urlparse(href).netloc == base_domain:
