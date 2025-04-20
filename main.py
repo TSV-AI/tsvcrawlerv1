@@ -22,7 +22,10 @@ app = FastAPI(
 @app.post("/crawl", response_model=CrawlResponse)
 def crawl_endpoint(req: CrawlRequest):
     try:
-        visited_set, files_set = crawl(req.baseUrl, req.depth, set(req.visited), set())
+        
+      visited_set, files_set = crawl(req.baseUrl, req.depth)
+
+    
         return CrawlResponse(
             visited=list(visited_set),
             foundFiles=list(files_set)
