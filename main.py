@@ -1,5 +1,3 @@
-from fastapi import FastAPI
-# main app code
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -21,13 +19,10 @@ app = FastAPI(
 @app.post("/crawl", response_model=CrawlResponse)
 def crawl_endpoint(req: CrawlRequest):
     try:
-        
-      visited_set, files_set = crawl(req.baseUrl, req.depth)
-
-    
+        visited_set, files_set = crawl(req.baseUrl, req.depth)
         return CrawlResponse(
-            visited=list(visited_set),
-            foundFiles=list(files_set)
+            visited    = list(visited_set),
+            foundFiles = list(files_set),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
