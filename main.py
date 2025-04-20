@@ -8,7 +8,6 @@ from crawler import crawl
 class CrawlRequest(BaseModel):
     baseUrl: str
     depth: Optional[int] = 2
-    visited: Optional[List[str]] = []
 
 class CrawlResponse(BaseModel):
     visited: List[str]
