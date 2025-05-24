@@ -30,11 +30,8 @@ app = FastAPI(
 # Allow your frontend origins here:
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",         # for React dev
-        "https://www.threesixtyvue.com", # for production
-    ],
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_origins=["*"],
+    allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
 )
