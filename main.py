@@ -108,14 +108,18 @@ async def crawl(
 import traceback, logging
 log = logging.getLogger("crawler")
 
+# main.py  ───── only the endpoint needs to change
 @app.post("/crawl", response_model=CrawlResponse)
 async def crawl_endpoint(req: CrawlRequest):
     try:
         visited_set, files_set = await crawl(
-            req.baseUrl, req.depth, req.visited, req.fileTypes
+            str(req.baseUrl),             # ← plain str, no .decode() issue
+            req.depth,
+            req.visited,
+            req.fileTypes,
         )
     except Exception as e:
-        # ⬇︎ This line prints the full stack to Render logs
+        # log / re-raise
         log.error("Crawl failed:\n%s", traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
