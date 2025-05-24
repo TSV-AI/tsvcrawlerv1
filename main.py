@@ -6,7 +6,8 @@ from pydantic import BaseModel, HttpUrl
 from typing import List, Optional, Set
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlsplit
+
 
 # ── Request & Response Models ────────────────────────────────────────────────
 
@@ -61,12 +62,18 @@ async def _fetch_and_parse(
     soup = BeautifulSoup(resp.text, "html.parser")
 
     # 1) collect files matching extensions
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        for ext in file_types:
-            if href.lower().endswith(f".{ext.lower()}"):
-                full_url = urljoin(page_url, href)
-                found.add(str(full_url))
+    for tag in soup.find_all(["a", "img", "script"]):
+        raw_href = tag.get("href") or tag.get("src")
+        if not raw_href:
+            continue
+
+        full_url = urljoin(page_url, raw_href)
+
+        # ⬇️ strip query-strings / fragments before extension check
+        path = urlsplit(full_url).path.lower()
+
+        if any(path.endswith(f".{ext}") for ext in file_types):
+            found.add(full_url)
 
     # 2) recurse into same-domain links
     if depth < max_depth:
