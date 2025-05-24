@@ -14,28 +14,25 @@ class CrawlRequest(BaseModel):
     baseUrl: HttpUrl
     depth: Optional[int] = 2
     visited: Optional[List[str]] = []
-    fileTypes: List[str]        # ← new field
+    fileTypes: List[str]
 
 class CrawlResponse(BaseModel):
     visited: List[str]
     foundFiles: List[str]
 
-# ── FastAPI App & CORS ────────────────────────────────────────────────────────
+# ── App & CORS ─────────────────────────────────────────────────────────────────
 
-app = FastAPI(
-    title="Three Sixty Vue Crawler",
-    description="Given a base URL, depth, and list of visited URLs, returns new file URLs and updated visited list."
-)
+app = FastAPI()
 
-# Allow your frontend origin(s) here:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
-# ── Core Crawl Logic ─────────────────────────────────────────────────────────
+# ── Core Crawl Logic ───────────────────────────────────────────────────────────
 
 async def _fetch_and_parse(
     client: httpx.AsyncClient,
@@ -59,22 +56,22 @@ async def _fetch_and_parse(
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # 1) collect files by extension
+    # collect files
     for a in soup.find_all("a", href=True):
         href = a["href"]
         for ext in file_types:
             if href.lower().endswith(f".{ext.lower()}"):
                 file_url = urljoin(page_url, href)
-                found.add(file_url)
+                found.add(str(file_url))
 
-    # 2) recurse into same-domain links
+    # recurse
     if depth < max_depth:
         for a in soup.find_all("a", href=True):
             full = urljoin(page_url, a["href"])
             if urlparse(full).netloc == base_domain:
                 await _fetch_and_parse(
-                    client, full, base_domain, depth + 1,
-                    max_depth, visited, found, file_types
+                    client, full, base_domain,
+                    depth + 1, max_depth, visited, found, file_types
                 )
 
 async def crawl(
@@ -85,33 +82,33 @@ async def crawl(
 ):
     visited: Set[str] = set(visited_list or [])
     found: Set[str] = set()
-    base_domain = urlparse(base_url).netloc
-    file_types = set(file_types_list or [])
-
+    domain = urlparse(base_url).netloc
     async with httpx.AsyncClient() as client:
         await _fetch_and_parse(
-            client, base_url, base_domain, 1,
-            max_depth, visited, found, file_types
+            client, base_url, domain,
+            1, max_depth, visited, found, set(file_types_list)
         )
-
     return visited, found
 
-# ── Endpoints ────────────────────────────────────────────────────────────────
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.post("/crawl", response_model=CrawlResponse)
 async def crawl_endpoint(req: CrawlRequest):
-    visited_set, files_set = await crawl(
-        req.baseUrl,
-        req.depth,
-        set(req.visited),
-        set(req.fileTypes)
-    )
-    return CrawlResponse(
-        visited=[str(u) for u in visited_set],
-        foundFiles=[str(u) for u in files_set],
-    )
+    try:
+        visited_set, files_set = await crawl(
+            req.baseUrl,
+            req.depth,
+            req.visited,
+            req.fileTypes
+        )
     except Exception as e:
+        # this is properly indented and syntactically correct
         raise HTTPException(status_code=500, detail=str(e))
+
+    return CrawlResponse(
+        visited=list(visited_set),
+        foundFiles=list(files_set)
+    )
 
 @app.get("/health")
 def health_check():
