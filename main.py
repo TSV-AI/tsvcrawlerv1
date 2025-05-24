@@ -122,8 +122,8 @@ async def crawl_endpoint(req: CrawlRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
     return CrawlResponse(
-        visited=list(visited_set),
-        foundFiles=list(files_set),
+        visited=[str(u) for u in visited_set],
+        foundFiles=[str(u) for u in files_set],   
     )
 
 @app.get("/health")
