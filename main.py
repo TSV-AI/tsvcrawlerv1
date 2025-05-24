@@ -17,8 +17,8 @@ class CrawlRequest(BaseModel):
     fileTypes: List[str]        # ← new field
 
 class CrawlResponse(BaseModel):
-    visited: List[HttpUrl]
-    foundFiles: List[HttpUrl]
+    visited: List[str]
+    foundFiles: List[str]
 
 # ── FastAPI App & CORS ────────────────────────────────────────────────────────
 
@@ -100,17 +100,16 @@ async def crawl(
 
 @app.post("/crawl", response_model=CrawlResponse)
 async def crawl_endpoint(req: CrawlRequest):
-    try:
-        visited_set, files_set = await crawl(
-            req.baseUrl,
-            req.depth,
-            set(req.visited),
-            set(req.fileTypes)     # ← use the incoming list, not an empty one
-        )
-        return CrawlResponse(
-            visited=list(visited_set),
-            foundFiles=list(files_set)
-        )
+    visited_set, files_set = await crawl(
+        req.baseUrl,
+        req.depth,
+        set(req.visited),
+        set(req.fileTypes)
+    )
+    return CrawlResponse(
+        visited=[str(u) for u in visited_set],
+        foundFiles=[str(u) for u in files_set],
+    )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
