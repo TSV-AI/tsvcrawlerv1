@@ -14,6 +14,7 @@ class CrawlRequest(BaseModel):
     baseUrl: HttpUrl
     depth: Optional[int] = 2
     visited: Optional[List[str]] = []
+    fileTypes: List[str]        # ← new field
 
 class CrawlResponse(BaseModel):
     visited: List[HttpUrl]
@@ -106,8 +107,8 @@ async def crawl_endpoint(req: CrawlRequest):
         visited_set, files_set = await crawl(
             req.baseUrl,
             req.depth,
-            req.visited,
-            []  # you can extend CrawlRequest to include fileTypes if desired
+            set(req.visited),
+            set(req.fileTypes)     # ← use the incoming list, not an empty one
         )
         return CrawlResponse(
             visited=list(visited_set),
