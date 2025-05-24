@@ -31,7 +31,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",                # dev
-        "https://your-frontend-domain.com",     # production
+        "http://localhost:5173",     # production
     ],
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
