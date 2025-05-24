@@ -105,22 +105,23 @@ async def crawl(
 
 # ── API Endpoints ────────────────────────────────────────────────────────────
 
+import traceback, logging
+log = logging.getLogger("crawler")
+
 @app.post("/crawl", response_model=CrawlResponse)
 async def crawl_endpoint(req: CrawlRequest):
     try:
         visited_set, files_set = await crawl(
-            req.baseUrl,
-            req.depth,
-            req.visited,
-            req.fileTypes
+            req.baseUrl, req.depth, req.visited, req.fileTypes
         )
     except Exception as e:
-        # any runtime error bubbles as 500
+        # ⬇︎ This line prints the full stack to Render logs
+        log.error("Crawl failed:\n%s", traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
     return CrawlResponse(
         visited=[str(u) for u in visited_set],
-        foundFiles=[str(u) for u in files_set],   
+        foundFiles=[str(u) for u in files_set],
     )
 
 @app.get("/health")
