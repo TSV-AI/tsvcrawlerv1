@@ -3,4 +3,5 @@ uvicorn
 requests
 beautifulsoup4
 httpx
-pydantic
+fastapi
+starlette
