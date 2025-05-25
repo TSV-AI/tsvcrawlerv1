@@ -1,11 +1,20 @@
+# FastAPI & Pydantic
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
+
+# Typing / std-lib
 from typing import List, Optional, Set
-from urllib.parse import urlparse            # ← add this line
-import httpx 
-from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+
+# Third-party libraries
+import httpx
+
+# Logging for debug (optional but recommended)
 import logging, traceback
+
+# Import the crawl coroutine from crawler.py
+from crawler import crawl
 
 # ── Request & Response Models ────────────────────────────────────────────────
 
