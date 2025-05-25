@@ -13,15 +13,19 @@ import logging, traceback
 from crawler import crawl   # import our coroutine
 
 # ── models ────────────────────────────────────────────────
+from enum import Enum
+
+class Mode(str, Enum):
+    standard     = "standard"
+    stealth      = "stealth"
+    residential  = "residential"
+
 class CrawlRequest(BaseModel):
     baseUrl:   HttpUrl
-    depth:     Optional[int] = 2
-    visited:   Optional[List[str]] = []
+    depth:     int = 2
+    visited:   List[str] = []
     fileTypes: List[str]
-
-class CrawlResponse(BaseModel):
-    visited:    List[str]
-    foundFiles: List[str]
+    mode:      Mode = Mode.standard          # ← rename field
 
 # ── app & CORS ────────────────────────────────────────────
 app = FastAPI(title="Three Sixty Vue Crawler")
@@ -45,6 +49,7 @@ async def crawl_endpoint(req: CrawlRequest):
             req.depth,
             req.visited,
             req.fileTypes,
+            req.mode,
         )
     except Exception:
         log.error("crawl failed:\n%s", traceback.format_exc())
