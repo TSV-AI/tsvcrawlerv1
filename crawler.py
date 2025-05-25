@@ -106,19 +106,5 @@ async def crawl(
             file_types=file_types,
         )
 
-    # Parallel HEAD-check to verify files exist
-    valid: Set[str] = set()
-    loop = asyncio.get_running_loop()
-    with ThreadPoolExecutor(max_workers=12) as pool:
-        future_to_url = {
-            loop.run_in_executor(pool, _head_ok, url): url for url in found
-        }
-        for fut in asyncio.as_completed(future_to_url):
-            url = future_to_url[fut]
-            try:
-                if await fut:
-                    valid.add(url)
-            except Exception:
-                pass  # ignore network errors
-
-    return visited, valid
+ # Skip HEAD validation – just return what was found
+ return visited, found
