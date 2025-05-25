@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional, Set
 from urllib.parse import urlparse            # ← add this line
+import httpx 
 import logging, traceback
 
 # ── Request & Response Models ────────────────────────────────────────────────
