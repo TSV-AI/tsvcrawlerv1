@@ -1,13 +1,9 @@
-# main.py
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional, Set
-import httpx
-from bs4 import BeautifulSoup
-from urllib.parse import urlsplit
-
+from urllib.parse import urlparse            # ← add this line
+import logging, traceback
 
 # ── Request & Response Models ────────────────────────────────────────────────
 
