@@ -94,6 +94,7 @@ async def crawl(
     file_types = {ext.lower().lstrip(".") for ext in (file_types_list or [])}
     base_domain = urlparse(base_url).netloc
 
+    # ── run the crawl ───────────────────────────────────────────────
     async with httpx.AsyncClient() as client:
         await _fetch_and_parse(
             client,
@@ -106,5 +107,5 @@ async def crawl(
             file_types=file_types,
         )
 
- # Skip HEAD validation – just return what was found
- return visited, found
+    # ── DONE: just return what we found (no HEAD-check) ─────────────
+    return visited, found
