@@ -4,6 +4,7 @@ import asyncio
 import httpx
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse, urlsplit      #  ← urlparse is back
+from bs4 import BeautifulSoup 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
