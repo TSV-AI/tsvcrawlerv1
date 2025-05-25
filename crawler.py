@@ -1,11 +1,12 @@
-# crawler.py  – final, working version
-from typing import List, Set, Tuple
+# Standard library
 import asyncio
+from typing import List, Set, Tuple
+from urllib.parse import urljoin, urlparse, urlsplit
+from concurrent.futures import ThreadPoolExecutor
+
+# Third-party libraries (must be in requirements.txt)
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse, urlsplit      #  ← urlparse is back
-from bs4 import BeautifulSoup 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 async def _fetch_and_parse(
