@@ -4,7 +4,7 @@ from pydantic import BaseModel, HttpUrl
 from typing import List, Optional, Set
 from urllib.parse import urlparse            # ← add this line
 import httpx 
-import BeautifulSoup 
+from bs4 import BeautifulSoup
 import logging, traceback
 
 # ── Request & Response Models ────────────────────────────────────────────────
