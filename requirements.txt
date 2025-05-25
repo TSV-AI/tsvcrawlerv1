@@ -1,7 +1,5 @@
 fastapi
 uvicorn
-requests
-beautifulsoup4
 httpx
+beautifulsoup4
 starlette
-pydantic
