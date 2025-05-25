@@ -27,7 +27,7 @@ async def _fetch_and_parse(
     visited.add(page_url)
 
     try:
-        resp = await client.get(page_url, timeout=10.0)
+        resp = await client.get(page_url, timeout=10.0, follow_redirects=True)
         resp.raise_for_status()
     except httpx.RequestError:
         return
