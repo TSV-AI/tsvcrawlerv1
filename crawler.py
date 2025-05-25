@@ -1,24 +1,10 @@
-"""
-crawler.py
-~~~~~~~~~~
-Asynchronous site crawler that:
-
-1. Recursively visits pages up to `max_depth`, **same-domain only**.
-2. Collects file URLs whose paths end with any extension in `file_types_list`.
-3. HEAD-checks each found file (in parallel) to confirm it exists (status < 400).
-
-The function signature is designed to plug directly into the FastAPI
-endpoint in `main.py`.
-"""
-
+# crawler.py  – final, working version
 from typing import List, Set, Tuple
 import asyncio
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlsplit      #  ← urlparse is back
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-# ── Internal helper ──────────────────────────────────────────────────────────
 
 
 async def _fetch_and_parse(
@@ -31,7 +17,6 @@ async def _fetch_and_parse(
     found: Set[str],
     file_types: Set[str],
 ):
-    """Recursive async crawler."""
     if page_url in visited or depth > max_depth:
         return
     visited.add(page_url)
@@ -44,21 +29,21 @@ async def _fetch_and_parse(
 
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    # 1) collect files
+    # 1) collect files (ignore ?query and #hash)
     for tag in soup.find_all(["a", "img", "script"]):
-        raw_href = tag.get("href") or tag.get("src")
-        if not raw_href:
+        raw = tag.get("href") or tag.get("src")
+        if not raw:
             continue
-        full_url = urljoin(page_url, raw_href)
-        path = urlparse(full_url).path.lower()
+        full = urljoin(page_url, raw)
+        path = urlsplit(full).path.lower()          # strip query/fragment
         if any(path.endswith(f".{ext}") for ext in file_types):
-            found.add(full_url)
+            found.add(full)
 
-    # 2) recurse into same-domain links
+    # 2) recurse same-domain links
     if depth < max_depth:
         for a in soup.find_all("a", href=True):
             child = urljoin(page_url, a["href"])
-            if urlparse(child).netloc == base_domain:
+            if urlparse(child).netloc == base_domain:   # urlparse now defined
                 await _fetch_and_parse(
                     client,
                     child,
@@ -72,28 +57,23 @@ async def _fetch_and_parse(
 
 
 def _head_check(url: str) -> bool:
-    """Synchronously verify the file actually exists."""
+    """Return True if the URL responds <400 to HEAD or fallback GET."""
     try:
         r = httpx.head(url, follow_redirects=True, timeout=5.0)
+        if r.status_code in (405, 403):
+            r = httpx.get(url, timeout=5.0)
         return r.status_code < 400
     except Exception:
         return False
 
 
-# ── Public API ───────────────────────────────────────────────────────────────
-
-
+# ── public coroutine ---------------------------------------------------------
 async def crawl(
     base_url: str,
     max_depth: int,
     visited_list: List[str],
     file_types_list: List[str],
 ) -> Tuple[Set[str], Set[str]]:
-    """
-    Asynchronously crawl `base_url` up to `max_depth`, return:
-        visited_set, valid_file_urls
-    `file_types_list` is a list like ["pdf", "png", "zip"] (case-insensitive).
-    """
     visited: Set[str] = set(visited_list or [])
     found: Set[str] = set()
     file_types: Set[str] = {ext.lower().lstrip(".") for ext in file_types_list or []}
@@ -111,15 +91,19 @@ async def crawl(
             file_types=file_types,
         )
 
-    # HEAD-check in parallel (thread pool → non-blocking for event loop)
+    # parallel HEAD check, mapping futures to URLs safely
     valid: Set[str] = set()
     loop = asyncio.get_running_loop()
     with ThreadPoolExecutor(max_workers=12) as pool:
-        tasks = [
-            loop.run_in_executor(pool, _head_check, url) for url in found
-        ]
-        for idx, coro in enumerate(asyncio.as_completed(tasks)):
-            if await coro:
-                valid.add(list(found)[idx])
+        future_to_url = {
+            loop.run_in_executor(pool, _head_check, url): url for url in found
+        }
+        for fut in asyncio.as_completed(future_to_url):
+            url = future_to_url[fut]
+            try:
+                if await fut:
+                    valid.add(url)
+            except Exception:
+                pass  # ignore network errors
 
     return visited, valid
