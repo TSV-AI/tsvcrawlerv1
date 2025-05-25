@@ -28,8 +28,7 @@ async def _fetch_and_parse(
 
     try:
         resp = await client.get(page_url, timeout=10.0, follow_redirects=True)
-        resp.raise_for_status()
-    except httpx.RequestError:
+        if resp.status_code >= 400: 
         return
 
     soup = BeautifulSoup(resp.text, "html.parser")
