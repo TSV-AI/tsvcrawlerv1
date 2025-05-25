@@ -3,3 +3,5 @@ uvicorn
 httpx
 beautifulsoup4
 starlette
+crawl4ai>=0.6.0          # async, LLM-friendly crawler  [oai_citation:0‡PyPI](https://pypi.org/project/Crawl4AI/?utm_source=chatgpt.com)
+groqcloud>=0.4.2         # tiny Groq REST client (or just use `requests`)
