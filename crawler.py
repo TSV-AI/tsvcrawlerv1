@@ -27,8 +27,14 @@ async def _fetch_and_parse(
     visited.add(page_url)
 
     try:
-        resp = await client.get(page_url, timeout=10.0, follow_redirects=True)
-        if resp.status_code >= 400: 
+    # ── download the page (follow redirects) ───────────────
+    resp = await client.get(
+        page_url,
+        timeout=10.0,
+        follow_redirects=True,
+    )
+    # Ignore pages that return 4xx or 5xx
+    if resp.status_code >= 400:
         return
 
     soup = BeautifulSoup(resp.text, "html.parser")
