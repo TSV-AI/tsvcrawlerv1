@@ -15,6 +15,7 @@ import logging, traceback
 
 # Import the crawl coroutine from crawler.py
 from crawler import crawl
+from bs4 import BeautifulSoup
 
 # ── Request & Response Models ────────────────────────────────────────────────
 
